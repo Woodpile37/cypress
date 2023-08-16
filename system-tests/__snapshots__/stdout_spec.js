@@ -99,8 +99,7 @@ The internal Cypress web server responded with:
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/stdout_failing.cy.js.mp4            (X second)
+  -  Video output: /XXX/XXX/XXX/cypress/videos/stdout_failing.cy.js.mp4
 
 
 ====================================================================================================
@@ -175,9 +174,7 @@ Fix the error in your code and re-run your tests.
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/stdout_exit_early_failing.cy.js     (X second)
-                          .mp4                                                                      
+  -  Video output: /XXX/XXX/XXX/cypress/videos/stdout_exit_early_failing.cy.js.mp4
 
 
 ====================================================================================================
@@ -248,8 +245,7 @@ exports['e2e stdout does not duplicate suites or tests between visits 1'] = `
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/stdout_passing.cy.js.mp4            (X second)
+  -  Video output: /XXX/XXX/XXX/cypress/videos/stdout_passing.cy.js.mp4
 
 
 ====================================================================================================
@@ -275,15 +271,15 @@ exports['e2e stdout displays fullname of nested specfile 1'] = `
   ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
   │ Cypress:    1.2.3                                                                              │
   │ Browser:    FooBrowser 88                                                                      │
-  │ Specs:      3 found (spec.cy.js, stdout_specfile.cy.js, stdout_specfile_display_spec_with_a_re │
-  │             ally_long_name_that_never_has_a_line_break_or_new_line.cy.js)                      │
-  │ Searched:   cypress/e2e/nested-1/nested-2/nested-3/*                                           │
+  │ Specs:      4 found (spec.cy.js, stdout_specfile.cy.js, stdout_specfile_display_spec_with_a_re │
+  │             ally_long_name_that_never_has_a_line_break_or_new_line.cy.js, nested-4/spec.cy.js) │
+  │ Searched:   cypress/e2e/nested-1/nested-2/nested-3/**/*                                        │
   └────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
                                                                                                     
-  Running:  spec.cy.js                                                                      (1 of 3)
+  Running:  spec.cy.js                                                                      (1 of 4)
 
 
   stdout_specfile_display_spec
@@ -310,13 +306,12 @@ exports['e2e stdout displays fullname of nested specfile 1'] = `
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/spec.cy.js.mp4                      (X second)
+  -  Video output: /XXX/XXX/XXX/cypress/videos/spec.cy.js.mp4
 
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
                                                                                                     
-  Running:  stdout_specfile.cy.js                                                           (2 of 3)
+  Running:  stdout_specfile.cy.js                                                           (2 of 4)
 
 
   stdout_specfile_display_spec
@@ -343,13 +338,12 @@ exports['e2e stdout displays fullname of nested specfile 1'] = `
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/stdout_specfile.cy.js.mp4           (X second)
+  -  Video output: /XXX/XXX/XXX/cypress/videos/stdout_specfile.cy.js.mp4
 
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────
                                                                                                     
-  Running:  stdout_specfile_display_spec_with_a_really_long_name_that_never_has_            (3 of 3)
+  Running:  stdout_specfile_display_spec_with_a_really_long_name_that_never_has_            (3 of 4)
             a_line_break_or_new_line.cy.js                                                          
 
 
@@ -385,10 +379,39 @@ exports['e2e stdout displays fullname of nested specfile 1'] = `
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/stdout_specfile_display_spec_wi     (X second)
-                          th_a_really_long_name_that_never_has_a_line_break_or_new_li               
-                          ne.cy.js.mp4                                                              
+  -  Video output: /XXX/XXX/XXX/cypress/videos/stdout_specfile_display_spec_with_a_really_long_name_that_never_has_a_line_break_or_new_line.cy.js.mp4
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                    
+  Running:  nested-4/spec.cy.js                                                             (4 of 4)
+
+
+  stdout_specfile_display_spec
+    ✓ passes
+
+
+  1 passing
+
+
+  (Results)
+
+  ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Tests:        1                                                                                │
+  │ Passing:      1                                                                                │
+  │ Failing:      0                                                                                │
+  │ Pending:      0                                                                                │
+  │ Skipped:      0                                                                                │
+  │ Screenshots:  0                                                                                │
+  │ Video:        true                                                                             │
+  │ Duration:     X seconds                                                                        │
+  │ Spec Ran:     nested-4/spec.cy.js                                                              │
+  └────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+
+  (Video)
+
+  -  Video output: /XXX/XXX/XXX/cypress/videos/nested-4/spec.cy.js.mp4
 
 
 ====================================================================================================
@@ -405,8 +428,10 @@ exports['e2e stdout displays fullname of nested specfile 1'] = `
   │ ✔  stdout_specfile_display_spec_with_a      XX:XX        1        1        -        -        - │
   │    _really_long_name_that_never_has_a_                                                         │
   │    line_break_or_new_line.cy.js                                                                │
+  ├────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ✔  nested-4/spec.cy.js                      XX:XX        1        1        -        -        - │
   └────────────────────────────────────────────────────────────────────────────────────────────────┘
-    ✔  All specs passed!                        XX:XX        3        3        -        -        -  
+    ✔  All specs passed!                        XX:XX        4        4        -        -        -  
 
 
 `
@@ -504,9 +529,7 @@ exports['e2e stdout / displays assertion errors'] = `
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/stdout_assertion_errors.cy.js.m     (X second)
-                          p4                                                                        
+  -  Video output: /XXX/XXX/XXX/cypress/videos/stdout_assertion_errors.cy.js.mp4
 
 
 ====================================================================================================
@@ -542,6 +565,11 @@ exports['e2e stdout respects quiet mode 1'] = `
 
 
   8 passing
+
+
+  (Video)
+
+  -  Video output: /XXX/XXX/XXX/cypress/videos/stdout_passing.cy.js.mp4
 
 
 `

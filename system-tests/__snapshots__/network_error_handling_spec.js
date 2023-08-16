@@ -61,8 +61,7 @@ exports['e2e network error handling Cypress does not connect to the upstream pro
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/https_passthru.cy.js.mp4            (X second)
+  -  Video output: /XXX/XXX/XXX/cypress/videos/https_passthru.cy.js.mp4
 
 
 ====================================================================================================
@@ -122,9 +121,7 @@ exports['e2e network error handling Cypress does not delay a 304 Not Modified in
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/network_error_304_handling.cy.j     (X second)
-                          s.mp4                                                                     
+  -  Video output: /XXX/XXX/XXX/cypress/videos/network_error_304_handling.cy.js.mp4
 
 
 ====================================================================================================
@@ -184,9 +181,7 @@ exports['e2e network error handling Cypress does not delay a 304 Not Modified be
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/network_error_304_handling.cy.j     (X second)
-                          s.mp4                                                                     
+  -  Video output: /XXX/XXX/XXX/cypress/videos/network_error_304_handling.cy.js.mp4
 
 
 ====================================================================================================
@@ -246,9 +241,7 @@ exports['e2e network error handling Cypress does not delay a 304 Not Modified be
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/network_error_304_handling.cy.j     (X second)
-                          s.mp4                                                                     
+  -  Video output: /XXX/XXX/XXX/cypress/videos/network_error_304_handling.cy.js.mp4
 
 
 ====================================================================================================
@@ -325,7 +318,6 @@ Common situations why this would fail:
   From Node.js Internals:
     Error: socket hang up
       [stack trace lines]
-    
 
   2) network error handling
        cy.request() retries
@@ -361,7 +353,6 @@ https://on.cypress.io/request
   From Node.js Internals:
     RequestError: Error: socket hang up
       [stack trace lines]
-    
 
 
 
@@ -391,9 +382,7 @@ https://on.cypress.io/request
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/network_error_handling.cy.js.mp     (X second)
-                          4                                                                         
+  -  Video output: /XXX/XXX/XXX/cypress/videos/network_error_handling.cy.js.mp4
 
 
 ====================================================================================================

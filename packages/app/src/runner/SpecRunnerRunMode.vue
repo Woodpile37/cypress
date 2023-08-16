@@ -1,7 +1,7 @@
 <template>
   <AdjustRunnerStyleDuringScreenshot
     id="main-pane"
-    class="flex border-gray-900"
+    class="flex"
   >
     <AutomationElement />
     <AutomationDisconnected
@@ -42,7 +42,7 @@
           />
         </HideDuringScreenshot>
         <RemoveClassesDuringScreenshotting
-          class="h-0 p-16px"
+          class="h-0 p-[16px]"
         >
           <ScriptError
             v-if="autStore.scriptError"

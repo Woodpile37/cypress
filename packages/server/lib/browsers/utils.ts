@@ -1,7 +1,7 @@
 /* eslint-disable no-redeclare */
 import Bluebird from 'bluebird'
 import _ from 'lodash'
-import type { FoundBrowser } from '@packages/types'
+import type { BrowserLaunchOpts, FoundBrowser } from '@packages/types'
 import * as errors from '../errors'
 import * as plugins from '../plugins'
 import { getError } from '@packages/errors'
@@ -14,6 +14,7 @@ const { fs } = require('../util/fs')
 const extension = require('@packages/extension')
 const appData = require('../util/app_data')
 const profileCleaner = require('../util/profile_cleaner')
+const { telemetry } = require('@packages/telemetry')
 
 const pathToBrowsers = appData.path('browsers')
 const legacyProfilesWildcard = path.join(pathToBrowsers, '*')
@@ -46,10 +47,12 @@ const defaultLaunchOptions: {
   preferences: {[key: string]: any}
   extensions: string[]
   args: string[]
+  env: {[key: string]: any}
 } = {
   preferences: {},
   extensions: [],
   args: [],
+  env: {},
 }
 
 const KNOWN_LAUNCH_OPTION_PROPERTIES = _.keys(defaultLaunchOptions)
@@ -122,7 +125,18 @@ const pathToExtension = extension.getPathToExtension()
 
 async function executeBeforeBrowserLaunch (browser, launchOptions: typeof defaultLaunchOptions, options) {
   if (plugins.has('before:browser:launch')) {
+    const span = telemetry.startSpan({ name: 'lifecycle:before:browser:launch' })
+
+    span?.setAttribute({
+      name: browser.name,
+      channel: browser.channel,
+      version: browser.version,
+      isHeadless: browser.isHeadless,
+    })
+
     const pluginConfigResult = await plugins.execute('before:browser:launch', browser, launchOptions)
+
+    span?.end()
 
     if (pluginConfigResult) {
       extendLaunchOptionsFromPlugins(launchOptions, pluginConfigResult, options)
@@ -132,13 +146,14 @@ async function executeBeforeBrowserLaunch (browser, launchOptions: typeof defaul
   return launchOptions
 }
 
-function extendLaunchOptionsFromPlugins (launchOptions, pluginConfigResult, options) {
+function extendLaunchOptionsFromPlugins (launchOptions, pluginConfigResult, options: BrowserLaunchOpts) {
   // if we returned an array from the plugin
   // then we know the user is using the deprecated
   // interface and we need to warn them
   // TODO: remove this logic in >= v5.0.0
   if (pluginConfigResult[0]) {
-    options.onWarning(getError(
+    // eslint-disable-next-line no-console
+    (options.onWarning || console.warn)(getError(
       'DEPRECATED_BEFORE_BROWSER_LAUNCH_ARGS',
     ))
 
@@ -203,10 +218,10 @@ const getWebKitBrowserVersion = async () => {
   }
 }
 
-const getWebKitBrowser = async () => {
+async function getWebKitBrowser () {
   try {
     const modulePath = require.resolve('playwright-webkit', { paths: [process.cwd()] })
-    const mod = require(modulePath) as typeof import('playwright-webkit')
+    const mod = await import(modulePath) as typeof import('playwright-webkit')
     const version = await getWebKitBrowserVersion()
 
     const browser: FoundBrowser = {
@@ -217,7 +232,7 @@ const getWebKitBrowser = async () => {
       version,
       path: mod.webkit.executablePath(),
       majorVersion: version.split('.')[0],
-      warning: 'WebKit support is not currently available in production.',
+      warning: 'WebKit support is currently experimental. Some functions may not work as expected.',
     }
 
     return browser
@@ -231,8 +246,12 @@ const getWebKitBrowser = async () => {
 const getBrowsers = async () => {
   debug('getBrowsers')
 
-  const browsers = await launcher.detect()
-  let majorVersion
+  const [browsers, wkBrowser] = await Promise.all([
+    launcher.detect(),
+    getWebKitBrowser(),
+  ])
+
+  if (wkBrowser) browsers.push(wkBrowser)
 
   debug('found browsers %o', { browsers })
 
@@ -242,8 +261,8 @@ const getBrowsers = async () => {
     return browsers
   }
 
-  // @ts-ignore
   const version = process.versions.chrome || ''
+  let majorVersion
 
   if (version) {
     majorVersion = getMajorVersion(version)
@@ -257,16 +276,9 @@ const getBrowsers = async () => {
     version,
     path: '',
     majorVersion,
-    info: 'Electron is the default browser that comes with Cypress. This is the default browser that runs in headless mode. Selecting this browser is useful when debugging. The version number indicates the underlying Chromium version that Electron uses.',
   }
 
   browsers.push(electronBrowser)
-
-  if (process.env.CYPRESS_INTERNAL_ENV !== 'production') {
-    const wkBrowser = await getWebKitBrowser()
-
-    if (wkBrowser) browsers.push(wkBrowser)
-  }
 
   return browsers
 }
@@ -293,8 +305,8 @@ const parseBrowserOption = (opt) => {
   }
 }
 
-function ensureAndGetByNameOrPath(nameOrPath: string, returnAll: false, browsers: FoundBrowser[]): Bluebird<FoundBrowser>
-function ensureAndGetByNameOrPath(nameOrPath: string, returnAll: true, browsers: FoundBrowser[]): Bluebird<FoundBrowser[]>
+function ensureAndGetByNameOrPath(nameOrPath: string, returnAll: false, browsers?: FoundBrowser[]): Bluebird<FoundBrowser>
+function ensureAndGetByNameOrPath(nameOrPath: string, returnAll: true, browsers?: FoundBrowser[]): Bluebird<FoundBrowser[]>
 
 async function ensureAndGetByNameOrPath (nameOrPath: string, returnAll = false, prevKnownBrowsers: FoundBrowser[] = []) {
   const browsers = prevKnownBrowsers.length ? prevKnownBrowsers : (await getBrowsers())

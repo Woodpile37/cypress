@@ -39,8 +39,7 @@ exports['e2e new project passes 1'] = `
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/app.cy.js.mp4                       (X second)
+  -  Video output: /XXX/XXX/XXX/cypress/videos/app.cy.js.mp4
 
 
 ====================================================================================================
