@@ -1,5 +1,5 @@
 import { FoundBrowser, Editor, AllowedState, AllModeOptions, TestingType, BrowserStatus, PACKAGE_MANAGERS, AuthStateName, MIGRATION_STEPS, MigrationStep, BannerState } from '@packages/types'
-import type { WizardFrontendFramework, WizardBundler } from '@packages/scaffold-config'
+import { WizardBundler, CT_FRAMEWORKS, resolveComponentFrameworkDefinition, ErroredFramework } from '@packages/scaffold-config'
 import type { NexusGenObjects } from '@packages/graphql/src/gen/nxs.gen'
 import type { App, BrowserWindow } from 'electron'
 import type { ChildProcess } from 'child_process'
@@ -7,10 +7,12 @@ import type { SocketIONamespace, SocketIOServer } from '@packages/socket'
 import type { Server } from 'http'
 import type { ErrorWrapperSource } from '@packages/errors'
 import type { GitDataSource, LegacyCypressConfigJson } from '../sources'
+import { machineId as getMachineId } from 'node-machine-id'
 
 export type Maybe<T> = T | null | undefined
 
 export interface AuthenticatedUserShape {
+  id?: string //Cloud user id
   name?: string
   email?: string
   authToken?: string
@@ -66,16 +68,17 @@ export interface AppDataShape {
 
 export interface WizardDataShape {
   chosenBundler: WizardBundler | null
-  chosenFramework: WizardFrontendFramework | null
+  chosenFramework: Cypress.ResolvedComponentFrameworkDefinition | null
   chosenManualInstall: boolean
   detectedBundler: WizardBundler | null
-  detectedFramework: WizardFrontendFramework | null
+  detectedFramework: Cypress.ResolvedComponentFrameworkDefinition | null
+  frameworks: Cypress.ResolvedComponentFrameworkDefinition[]
+  erroredFrameworks: ErroredFramework[]
 }
 
 export interface MigrationDataShape {
   // TODO: have the model of migration here
   step: MigrationStep
-  videoEmbedHtml: string | null
   legacyConfigForMigration?: LegacyCypressConfigJson | null
   filteredSteps: MigrationStep[]
   flags: {
@@ -114,11 +117,21 @@ interface Diagnostics {
   warnings: ErrorWrapperSource[]
 }
 
+interface CloudDataShape {
+  testsForRunResults?: Record<string, string[]>
+  metadata?: {
+    id?: string
+    name?: string
+  }
+}
+
 export interface CoreDataShape {
   cliBrowser: string | null
   cliTestingType: string | null
   activeBrowser: FoundBrowser | null
+  machineId: Promise<string | null>
   machineBrowsers: Promise<FoundBrowser[]> | null
+  allBrowsers: Promise<FoundBrowser[]> | null
   servers: {
     appServer?: Maybe<Server>
     appServerPort?: Maybe<number>
@@ -129,7 +142,7 @@ export interface CoreDataShape {
     gqlSocketServer?: Maybe<SocketIONamespace>
   }
   hasInitializedMode: 'run' | 'open' | null
-  dashboardGraphQLError: ErrorWrapperSource | null
+  cloudGraphQLError: ErrorWrapperSource | null
   dev: DevStateShape
   localSettings: LocalSettingsDataShape
   app: AppDataShape
@@ -149,6 +162,7 @@ export interface CoreDataShape {
     latestVersion: Promise<string>
     npmMetadata: Promise<Record<string, string>>
   } | null
+  cloudProject: CloudDataShape
 }
 
 /**
@@ -159,9 +173,11 @@ export function makeCoreData (modeOptions: Partial<AllModeOptions> = {}): CoreDa
     servers: {},
     cliBrowser: modeOptions.browser ?? null,
     cliTestingType: modeOptions.testingType ?? null,
+    machineId: machineId(),
     machineBrowsers: null,
+    allBrowsers: null,
     hasInitializedMode: null,
-    dashboardGraphQLError: null,
+    cloudGraphQLError: null,
     dev: {
       refreshState: null,
     },
@@ -191,10 +207,12 @@ export function makeCoreData (modeOptions: Partial<AllModeOptions> = {}): CoreDa
       chosenManualInstall: false,
       detectedBundler: null,
       detectedFramework: null,
+      // TODO: API to add third party frameworks to this list.
+      frameworks: CT_FRAMEWORKS.map((framework) => resolveComponentFrameworkDefinition(framework)),
+      erroredFrameworks: [],
     },
     migration: {
       step: 'renameAuto',
-      videoEmbedHtml: null,
       legacyConfigForMigration: null,
       filteredSteps: [...MIGRATION_STEPS],
       flags: {
@@ -219,5 +237,16 @@ export function makeCoreData (modeOptions: Partial<AllModeOptions> = {}): CoreDa
     packageManager: 'npm',
     forceReconfigureProject: null,
     versionData: null,
+    cloudProject: {
+      testsForRunResults: {},
+    },
+  }
+
+  async function machineId (): Promise<string | null> {
+    try {
+      return await getMachineId()
+    } catch (error) {
+      return null
+    }
   }
 }

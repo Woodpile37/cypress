@@ -25,6 +25,12 @@ describe('lib/plugins/child/ts_node', () => {
         compilerOptions: {
           module: 'commonjs',
         },
+        ignore: [
+          '(?:^|/)node_modules/',
+          '/packages/telemetry/dist/span-exporters/ipc-span-exporter',
+          '/packages/telemetry/dist/span-exporters/console-trace-link-exporter',
+          '/packages/telemetry/dist/processors/on-start-span-processor',
+        ],
       })
     })
 
@@ -40,6 +46,12 @@ describe('lib/plugins/child/ts_node', () => {
           module: 'commonjs',
           preserveValueImports: false,
         },
+        ignore: [
+          '(?:^|/)node_modules/',
+          '/packages/telemetry/dist/span-exporters/ipc-span-exporter',
+          '/packages/telemetry/dist/span-exporters/console-trace-link-exporter',
+          '/packages/telemetry/dist/processors/on-start-span-processor',
+        ],
       })
     })
 
@@ -55,6 +67,7 @@ describe('lib/plugins/child/ts_node', () => {
       sinon.spy(console, 'warn')
       tsNodeUtil.register('proj-root', '/path/to/plugins/file.js')
 
+      // eslint-disable-next-line no-console
       expect(console.warn).not.to.be.calledWith('Missing baseUrl in compilerOptions. tsconfig-paths will be skipped')
     })
   })
