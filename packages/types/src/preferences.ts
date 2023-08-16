@@ -1,9 +1,15 @@
-import type { BannersState, Editor } from '.'
+import type { BannersState, Editor, MajorVersionWelcomeDismissed } from '.'
+
+export type NotifyWhenRunCompletes = 'passed' | 'failed' | 'cancelled' | 'errored'
 
 export const defaultPreferences: AllowedState = {
   autoScrollingEnabled: true,
   isSpecsListOpen: false,
   isSideNavigationOpen: true,
+  desktopNotificationsEnabled: null,
+  notifyWhenRunStarts: false,
+  notifyWhenRunStartsFailing: true,
+  notifyWhenRunCompletes: ['failed'],
 }
 
 export const allowedKeys: Readonly<Array<keyof AllowedState>> = [
@@ -25,18 +31,22 @@ export const allowedKeys: Readonly<Array<keyof AllowedState>> = [
   'firstOpenedCypress',
   'showedStudioModal',
   'preferredOpener',
-  'ctReporterWidth',
-  'ctIsSpecsListOpen',
   'isSpecsListOpen',
-  'ctSpecListWidth',
   'firstOpened',
   'lastOpened',
   'lastProjectId',
   'promptsShown',
   'specFilter',
   'preferredEditorBinary',
+  'desktopNotificationsEnabled',
+  'dismissNotificationBannerUntil',
   'isSideNavigationOpen',
   'lastBrowser',
+  'majorVersionWelcomeDismissed',
+  'debugSlideshowComplete',
+  'notifyWhenRunStarts',
+  'notifyWhenRunStartsFailing',
+  'notifyWhenRunCompletes',
 ] as const
 
 type Maybe<T> = T | null | undefined
@@ -61,9 +71,6 @@ export type AllowedState = Partial<{
   firstOpenedCypress: Maybe<number>
   showedStudioModal: Maybe<boolean>
   preferredOpener: Editor | undefined
-  ctReporterWidth: Maybe<number>
-  ctIsSpecsListOpen: Maybe<boolean>
-  ctSpecListWidth: Maybe<number>
   lastProjectId: Maybe<string>
   firstOpened: Maybe<number>
   lastOpened: Maybe<number>
@@ -73,4 +80,11 @@ export type AllowedState = Partial<{
   isSideNavigationOpen: Maybe<boolean>
   testingType: 'e2e' | 'component'
   lastBrowser: { name: string, channel: string }
+  majorVersionWelcomeDismissed: Maybe<MajorVersionWelcomeDismissed>
+  debugSlideshowComplete: Maybe<boolean>
+  desktopNotificationsEnabled: Maybe<boolean>
+  dismissNotificationBannerUntil: Maybe<Date>
+  notifyWhenRunStarts: Maybe<boolean>
+  notifyWhenRunStartsFailing: Maybe<boolean>
+  notifyWhenRunCompletes: Maybe<NotifyWhenRunCompletes[]>
 }>

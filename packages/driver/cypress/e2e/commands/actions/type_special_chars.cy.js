@@ -6,8 +6,7 @@ const {
   trimInnerText,
 } = require('../../../support/utils')
 
-// TODO(webkit): fix+unskip for experimental webkit release
-describe('src/cy/commands/actions/type - #type special chars', { browser: '!webkit' }, () => {
+describe('src/cy/commands/actions/type - #type special chars', () => {
   before(function () {
     cy
     .visit('/fixtures/dom.html')
@@ -86,7 +85,7 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
 
   context('{{}', () => {
     // TODO: fix flaky test https://github.com/cypress-io/cypress/issues/23160
-    it.skip('sets which and keyCode to 219', (done) => {
+    it('sets which and keyCode to 219', { retries: 15 }, (done) => {
       cy.$$(':text:first').on('keydown', (e) => {
         expect(e.which).to.eq(219)
         expect(e.keyCode).to.eq(219)
@@ -114,7 +113,13 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
 
     it('fires textInput event with e.data', (done) => {
       cy.$$(':text:first').on('textInput', (e) => {
-        expect(e.originalEvent.data).to.eq('{')
+        if (Cypress.isBrowser('webkit')) {
+          // For WebKit, the simulated textInput event is not
+          // emitted with the char data to prevent double entry.
+          expect(e.originalEvent.data).to.eq('')
+        } else {
+          expect(e.originalEvent.data).to.eq('{')
+        }
 
         done()
       })
@@ -233,7 +238,7 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
     })
 
     // TODO: fix flaky test https://github.com/cypress-io/cypress/issues/23160
-    it.skip('sets which and keyCode to 8 and does not fire keypress events', (done) => {
+    it('sets which and keyCode to 8 and does not fire keypress events', { retries: 15 }, (done) => {
       cy.$$(':text:first').on('keypress', () => {
         done('should not have received keypress')
       })
@@ -250,7 +255,7 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
     })
 
     // TODO: fix flaky test https://github.com/cypress-io/cypress/issues/23160
-    it.skip('does not fire textInput event', (done) => {
+    it('does not fire textInput event', { retries: 15 }, (done) => {
       cy.$$(':text:first').on('textInput', (e) => {
         done(new Error('textInput should not have fired'))
       })
@@ -261,7 +266,7 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
     })
 
     // TODO: fix flaky test https://github.com/cypress-io/cypress/issues/23160
-    it.skip('can prevent default backspace movement', (done) => {
+    it('can prevent default backspace movement', { retries: 15 }, (done) => {
       cy.$$(':text:first').on('keydown', (e) => {
         if (e.keyCode === 8) {
           e.preventDefault()
@@ -309,8 +314,8 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
       attachKeyListeners({ input })
 
       cy.get(':text:first').invoke('val', 'ab')
-      .then(($input) => $input[0].setSelectionRange(0, 0))
       .focus()
+      .then(($input) => $input[0].setSelectionRange(0, 0))
       .type('{backspace}')
       .should('have.value', 'ab')
 
@@ -352,8 +357,8 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
       attachKeyListeners({ input })
 
       cy.get('textarea:first').invoke('val', 'ab')
-      .then(($textarea) => $textarea[0].setSelectionRange(0, 0))
       .focus()
+      .then(($textarea) => $textarea[0].setSelectionRange(0, 0))
       .type('{backspace}')
       .should('have.value', 'ab')
 
@@ -447,9 +452,8 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
       attachKeyListeners({ input })
 
       cy.get(':text:first').invoke('val', 'ab')
-
-      .then(($input) => $input[0].setSelectionRange(0, 0))
       .focus()
+      .then(($input) => $input[0].setSelectionRange(0, 0))
       .type('{del}')
       .should('have.value', 'b')
 
@@ -493,8 +497,8 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
       attachKeyListeners({ textarea })
 
       cy.get('textarea:first').invoke('val', 'ab')
-      .then(($textarea) => $textarea[0].setSelectionRange(0, 0))
       .focus()
+      .then(($textarea) => $textarea[0].setSelectionRange(0, 0))
       .type('{del}')
       .should('have.value', 'b')
 
@@ -577,7 +581,7 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
     })
 
     // TODO: fix flaky test https://github.com/cypress-io/cypress/issues/23160
-    it.skip('can prevent default del movement', (done) => {
+    it('can prevent default del movement', { retries: 15 }, (done) => {
       cy.$$(':text:first').on('keydown', (e) => {
         if (e.keyCode === 46) {
           e.preventDefault()
@@ -999,7 +1003,10 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
       cy.get('input[type="number"]:first')
       .invoke('val', '12.34')
       .type('{uparrow}{uparrow}')
-      .should('have.value', '14')
+      // WebKit does not round to the step value when calling stepUp/stepDown,
+      // as we do here for the ArrowUp handler.
+      // https://bugs.webkit.org/show_bug.cgi?id=244206
+      .should('have.value', Cypress.isBrowser('webkit') ? '14.34' : '14')
     })
   })
 
@@ -1057,7 +1064,10 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
       cy.get('input[type="number"]:first')
       .invoke('val', '12.34')
       .type('{downarrow}{downarrow}')
-      .should('have.value', '11')
+      // WebKit does not round to the step value when calling stepUp/stepDown,
+      // as we do here for the ArrowDown handler
+      // https://bugs.webkit.org/show_bug.cgi?id=244206
+      .should('have.value', Cypress.isBrowser('webkit') ? '10.34' : '11')
     })
 
     it('downarrow ignores current selection', () => {
@@ -1230,7 +1240,7 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
 
     // https://github.com/cypress-io/cypress/issues/3405
     // TODO: fix flaky test https://github.com/cypress-io/cypress/issues/23160
-    it.skip('does fire input event when text inserted', (done) => {
+    it('does fire input event when text inserted', { retries: 15 }, (done) => {
       cy.$$('[contenteditable]:first').on('input', (e) => {
         done()
       })
@@ -1271,7 +1281,7 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
 
     context('1 input, no \'submit\' elements', () => {
       // TODO: fix flaky test https://github.com/cypress-io/cypress/issues/23160
-      it.skip('triggers form submit', function (done) {
+      it('triggers form submit', { retries: 15 }, function (done) {
         this.foo = {}
 
         this.$forms.find('#single-input').submit((e) => {
@@ -1292,7 +1302,6 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
 
         this.$forms.find('#single-input').submit((e) => {
           e.preventDefault()
-
           events.push('submit')
         })
 
@@ -1300,10 +1309,14 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
           const state = log.get('state')
 
           if (state === 'pending') {
-            log.on('state:changed', (state) => {
-              return events.push(`${log.get('name')}:log:${state}`)
-            })
+            events.push(`${log.get('name')}:log:${state}`)
+          }
+        })
 
+        cy.on('command:log:changed', (attrs, log) => {
+          const state = log.get('state')
+
+          if (state === 'pending') {
             events.push(`${log.get('name')}:log:${state}`)
           }
         })
@@ -1314,7 +1327,14 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
 
         cy.get('#single-input input').type('f{enter}').then(() => {
           expect(events).to.deep.eq([
-            'get:start', 'get:log:pending', 'get:end', 'type:start', 'type:log:pending', 'submit', 'type:end', 'then:start',
+            'get:start',
+            'get:log:pending',
+            'get:end',
+            'type:start',
+            'type:log:pending',
+            'submit',
+            'type:end',
+            'then:start',
           ])
         })
       })
@@ -1461,7 +1481,7 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
 
     context('2 inputs, 1 \'submit\' element input[type=submit]', () => {
       // TODO: fix flaky test https://github.com/cypress-io/cypress/issues/23160
-      it.skip('triggers form submit', function (done) {
+      it('triggers form submit', { retries: 15 }, function (done) {
         this.$forms.find('#multiple-inputs-and-input-submit').submit((e) => {
           e.preventDefault()
 
@@ -1736,7 +1756,8 @@ describe('src/cy/commands/actions/type - #type special chars', { browser: '!webk
         })
       })
 
-      it('will not submit the form', function (done) {
+      // WebKit still emits the submit event on the form in this configuration.
+      it('will not submit the form', { browser: '!webkit' }, function (done) {
         this.$forms.find('#multiple-inputs-and-multiple-submits').submit(() => {
           done(new Error('should not receive submit event'))
         })

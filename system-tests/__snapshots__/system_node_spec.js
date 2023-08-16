@@ -46,8 +46,7 @@ Please remove the nodeVersion configuration option from cypress.config.js.
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/system.spec.js.mp4                  (X second)
+  -  Video output: /XXX/XXX/XXX/cypress/videos/system.spec.js.mp4
 
 
 ====================================================================================================
@@ -113,8 +112,7 @@ As the nodeVersion configuration option will be removed in a future release, it 
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/bundled.spec.js.mp4                 (X second)
+  -  Video output: /XXX/XXX/XXX/cypress/videos/bundled.spec.js.mp4
 
 
 ====================================================================================================
@@ -173,8 +171,7 @@ exports['e2e system node uses default node when launching plugins file 1'] = `
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/default.spec.js.mp4                 (X second)
+  -  Video output: /XXX/XXX/XXX/cypress/videos/default.spec.js.mp4
 
 
 ====================================================================================================

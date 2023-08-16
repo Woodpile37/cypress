@@ -21,10 +21,9 @@ const BREAKING_OPTION_ERROR_KEY: Readonly<AllCypressErrorNames[]> = [
   'EXPERIMENTAL_NETWORK_STUBBING_REMOVED',
   'EXPERIMENTAL_RUN_EVENTS_REMOVED',
   'EXPERIMENTAL_SESSION_SUPPORT_REMOVED',
+  'EXPERIMENTAL_SESSION_AND_ORIGIN_REMOVED',
   'EXPERIMENTAL_SINGLE_TAB_RUN_MODE',
   'EXPERIMENTAL_SHADOW_DOM_REMOVED',
-  'EXPERIMENTAL_STUDIO_REMOVED',
-  'EXPERIMENTAL_STUDIO_REMOVED',
   'FIREFOX_GC_INTERVAL_REMOVED',
   'NODE_VERSION_DEPRECATION_SYSTEM',
   'NODE_VERSION_DEPRECATION_BUNDLED',
@@ -32,6 +31,10 @@ const BREAKING_OPTION_ERROR_KEY: Readonly<AllCypressErrorNames[]> = [
   'RENAMED_CONFIG_OPTION',
   'TEST_FILES_RENAMED',
 ] as const
+
+type ValidationOptions = {
+  testingType: TestingType | null
+}
 
 export type BreakingOptionErrorKey = typeof BREAKING_OPTION_ERROR_KEY[number]
 
@@ -92,7 +95,7 @@ export interface BreakingOption {
   showInLaunchpad?: boolean
 }
 
-const isValidConfig = (testingType: string, config: any) => {
+const isValidConfig = (testingType: string, config: any, opts: ValidationOptions) => {
   const status = validate.isPlainObject(testingType, config)
 
   if (status !== true) {
@@ -101,7 +104,7 @@ const isValidConfig = (testingType: string, config: any) => {
 
   for (const rule of options) {
     if (rule.name in config && rule.validation) {
-      const status = rule.validation(`${testingType}.${rule.name}`, config[rule.name])
+      const status = rule.validation(`${testingType}.${rule.name}`, config[rule.name], opts)
 
       if (status !== true) {
         return status
@@ -115,6 +118,11 @@ const isValidConfig = (testingType: string, config: any) => {
 export const defaultSpecPattern = {
   e2e: 'cypress/e2e/**/*.cy.{js,jsx,ts,tsx}',
   component: '**/*.cy.{js,jsx,ts,tsx}',
+}
+
+export const defaultExcludeSpecPattern = {
+  e2e: '*.hot-update.js',
+  component: ['**/__snapshots__/*', '**/__image_snapshots__/*'],
 }
 
 // NOTE:
@@ -143,6 +151,7 @@ const driverConfigOptions: Array<DriverConfigOption> = [
     defaultValue: null,
     validation: validate.isStringOrArrayOfStrings,
     overrideLevel: 'any',
+    requireRestartOnChange: 'server',
   }, {
     name: 'chromeWebSecurity',
     defaultValue: true,
@@ -190,6 +199,12 @@ const driverConfigOptions: Array<DriverConfigOption> = [
     validation: validate.isNumber,
     overrideLevel: 'any',
   }, {
+    name: 'experimentalCspAllowList',
+    defaultValue: false,
+    validation: validate.validateAny(validate.isBoolean, validate.isArrayIncludingAny('script-src-elem', 'script-src', 'default-src', 'form-action', 'child-src', 'frame-src')),
+    overrideLevel: 'never',
+    requireRestartOnChange: 'server',
+  }, {
     name: 'experimentalFetchPolyfill',
     defaultValue: false,
     validation: validate.isBoolean,
@@ -201,7 +216,12 @@ const driverConfigOptions: Array<DriverConfigOption> = [
     isExperimental: true,
     requireRestartOnChange: 'server',
   }, {
-    name: 'experimentalSessionAndOrigin',
+    name: 'experimentalRunAllSpecs',
+    defaultValue: false,
+    validation: validate.isBoolean,
+    isExperimental: true,
+  }, {
+    name: 'experimentalMemoryManagement',
     defaultValue: false,
     validation: validate.isBoolean,
     isExperimental: true,
@@ -212,6 +232,19 @@ const driverConfigOptions: Array<DriverConfigOption> = [
     isExperimental: true,
     requireRestartOnChange: 'server',
   }, {
+    name: 'experimentalSkipDomainInjection',
+    defaultValue: null,
+    validation: validate.isNullOrArrayOfStrings,
+    isExperimental: true,
+    requireRestartOnChange: 'server',
+  }, {
+    name: 'experimentalOriginDependencies',
+    defaultValue: false,
+    validation: validate.isBoolean,
+    isExperimental: true,
+    overrideLevel: 'any',
+    requireRestartOnChange: 'browser',
+  }, {
     name: 'experimentalSourceRewriting',
     defaultValue: false,
     validation: validate.isBoolean,
@@ -219,6 +252,18 @@ const driverConfigOptions: Array<DriverConfigOption> = [
     requireRestartOnChange: 'server',
   }, {
     name: 'experimentalSingleTabRunMode',
+    defaultValue: false,
+    validation: validate.isBoolean,
+    isExperimental: true,
+    requireRestartOnChange: 'server',
+  }, {
+    name: 'experimentalStudio',
+    defaultValue: false,
+    validation: validate.isBoolean,
+    isExperimental: true,
+    requireRestartOnChange: 'browser',
+  }, {
+    name: 'experimentalWebKitSupport',
     defaultValue: false,
     validation: validate.isBoolean,
     isExperimental: true,
@@ -237,7 +282,7 @@ const driverConfigOptions: Array<DriverConfigOption> = [
     requireRestartOnChange: 'server',
   }, {
     name: 'excludeSpecPattern',
-    defaultValue: (options: Record<string, any> = {}) => options.testingType === 'component' ? ['**/__snapshots__/*', '**/__image_snapshots__/*'] : '*.hot-update.js',
+    defaultValue: (options: Record<string, any> = {}) => options.testingType === 'component' ? defaultExcludeSpecPattern.component : defaultExcludeSpecPattern.e2e,
     validation: validate.isStringOrArrayOfStrings,
     overrideLevel: 'any',
   }, {
@@ -360,13 +405,18 @@ const driverConfigOptions: Array<DriverConfigOption> = [
     overrideLevel: 'any',
   }, {
     name: 'testIsolation',
-    // TODO: https://github.com/cypress-io/cypress/issues/23093
-    // When experimentalSessionAndOrigin is removed and released as GA,
-    // update the defaultValue from 'legacy' to 'strict' and
-    // update this code to remove the check/override specific to enable
-    // strict by default when experimentalSessionAndOrigin=true
-    defaultValue: 'legacy',
-    validation: validate.isOneOf('legacy', 'strict'),
+    defaultValue: true,
+    validation: (key: string, value: any, opts: ValidationOptions) => {
+      const { testingType } = opts
+
+      let configOpts = [true, false]
+
+      if (testingType === 'component') {
+        configOpts.pop()
+      }
+
+      return validate.isOneOf(...configOpts)(key, value)
+    },
     overrideLevel: 'suite',
   }, {
     name: 'trashAssetsBeforeRuns',
@@ -384,7 +434,7 @@ const driverConfigOptions: Array<DriverConfigOption> = [
   }, {
     name: 'videoCompression',
     defaultValue: 32,
-    validation: validate.isNumberOrFalse,
+    validation: validate.isValidCrfOrBoolean,
   }, {
     name: 'videosFolder',
     defaultValue: 'cypress/videos',
@@ -492,6 +542,11 @@ const runtimeOptions: Array<RuntimeConfigOption> = [
     validation: validate.isString,
     isInternal: true,
   }, {
+    name: 'repoRoot',
+    defaultValue: null,
+    validation: validate.isString,
+    isInternal: true,
+  }, {
     name: 'reporterRoute',
     defaultValue: '/__cypress/reporter',
     validation: validate.isString,
@@ -514,11 +569,6 @@ const runtimeOptions: Array<RuntimeConfigOption> = [
   }, {
     name: 'version',
     defaultValue: pkg.version,
-    validation: validate.isString,
-    isInternal: true,
-  }, {
-    name: 'xhrRoute',
-    defaultValue: '/xhrs/',
     validation: validate.isString,
     isInternal: true,
   },
@@ -563,14 +613,13 @@ export const breakingOptions: Readonly<BreakingOption[]> = [
     errorKey: 'EXPERIMENTAL_SESSION_SUPPORT_REMOVED',
     isWarning: true,
   }, {
+    name: 'experimentalSessionAndOrigin',
+    errorKey: 'EXPERIMENTAL_SESSION_AND_ORIGIN_REMOVED',
+    isWarning: true,
+  }, {
     name: 'experimentalShadowDomSupport',
     errorKey: 'EXPERIMENTAL_SHADOW_DOM_REMOVED',
     isWarning: true,
-  }, {
-    name: 'experimentalStudio',
-    errorKey: 'EXPERIMENTAL_STUDIO_REMOVED',
-    isWarning: true,
-    showInLaunchpad: true,
   }, {
     name: 'firefoxGcInterval',
     errorKey: 'FIREFOX_GC_INTERVAL_REMOVED',
@@ -613,19 +662,9 @@ export const breakingRootOptions: Array<BreakingOption> = [
     isWarning: false,
     testingTypes: ['e2e'],
   }, {
-    name: 'experimentalSessionAndOrigin',
-    errorKey: 'CONFIG_FILE_INVALID_ROOT_CONFIG_E2E',
-    isWarning: false,
-    testingTypes: ['e2e'],
-  }, {
     name: 'excludeSpecPattern',
     errorKey: 'CONFIG_FILE_INVALID_ROOT_CONFIG',
     isWarning: false,
-    testingTypes: ['component', 'e2e'],
-  }, {
-    name: 'experimentalStudio',
-    errorKey: 'EXPERIMENTAL_STUDIO_REMOVED',
-    isWarning: true,
     testingTypes: ['component', 'e2e'],
   }, {
     name: 'indexHtmlFile',
@@ -652,6 +691,23 @@ export const breakingRootOptions: Array<BreakingOption> = [
     errorKey: 'CONFIG_FILE_INVALID_ROOT_CONFIG',
     isWarning: false,
     testingTypes: ['e2e'],
+  }, {
+    name: 'experimentalRunAllSpecs',
+    errorKey: 'EXPERIMENTAL_RUN_ALL_SPECS_E2E_ONLY',
+    isWarning: false,
+    testingTypes: ['e2e'],
+  },
+  {
+    name: 'experimentalOriginDependencies',
+    errorKey: 'EXPERIMENTAL_ORIGIN_DEPENDENCIES_E2E_ONLY',
+    isWarning: false,
+    testingTypes: ['e2e'],
+  },
+  {
+    name: 'experimentalSkipDomainInjection',
+    errorKey: 'EXPERIMENTAL_USE_DEFAULT_DOCUMENT_DOMAIN_E2E_ONLY',
+    isWarning: false,
+    testingTypes: ['e2e'],
   },
 ]
 
@@ -661,7 +717,6 @@ export const testingTypeBreakingOptions: { e2e: Array<BreakingOption>, component
       name: 'experimentalSingleTabRunMode',
       errorKey: 'EXPERIMENTAL_SINGLE_TAB_RUN_MODE',
       isWarning: false,
-      testingTypes: ['e2e'],
     },
     {
       name: 'indexHtmlFile',
@@ -676,13 +731,28 @@ export const testingTypeBreakingOptions: { e2e: Array<BreakingOption>, component
       isWarning: false,
     },
     {
-      name: 'experimentalSessionAndOrigin',
-      errorKey: 'CONFIG_FILE_INVALID_TESTING_TYPE_CONFIG_COMPONENT',
+      name: 'experimentalStudio',
+      errorKey: 'EXPERIMENTAL_STUDIO_E2E_ONLY',
       isWarning: false,
     },
     {
       name: 'testIsolation',
       errorKey: 'CONFIG_FILE_INVALID_TESTING_TYPE_CONFIG_COMPONENT',
+      isWarning: false,
+    },
+    {
+      name: 'experimentalRunAllSpecs',
+      errorKey: 'EXPERIMENTAL_RUN_ALL_SPECS_E2E_ONLY',
+      isWarning: false,
+    },
+    {
+      name: 'experimentalOriginDependencies',
+      errorKey: 'EXPERIMENTAL_ORIGIN_DEPENDENCIES_E2E_ONLY',
+      isWarning: false,
+    },
+    {
+      name: 'experimentalSkipDomainInjection',
+      errorKey: 'EXPERIMENTAL_USE_DEFAULT_DOCUMENT_DOMAIN_E2E_ONLY',
       isWarning: false,
     },
   ],

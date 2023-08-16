@@ -72,9 +72,10 @@ describe('e2e web security', () => {
 
   context('when enabled', () => {
     systemTests.it('fails', {
+      browser: '!webkit', // TODO(webkit): fix+unskip
       spec: 'web_security.cy.js',
       config: {
-        experimentalSessionAndOrigin: true,
+        videoCompression: false,
         pageLoadTimeout: 5000,
       },
       snapshot: true,
@@ -86,8 +87,8 @@ describe('e2e web security', () => {
     systemTests.it('passes', {
       spec: 'web_security.cy.js',
       config: {
+        videoCompression: false,
         chromeWebSecurity: false,
-        experimentalSessionAndOrigin: true,
       },
       snapshot: true,
       browser: ['chrome', 'electron'],
@@ -98,12 +99,14 @@ describe('e2e web security', () => {
     systemTests.it('displays warning when firefox and chromeWebSecurity:false', {
       spec: 'simple_passing.cy.js',
       snapshot: true,
+      // TODO(webkit): run this test in webkit
       browser: 'firefox',
       config: {
+        videoCompression: false,
         chromeWebSecurity: false,
       },
       onStdout (stdout) {
-        expect(stdout).include('Your project has set the configuration option: chromeWebSecurity to false\n\nThis option will not have an effect in Firefox.')
+        expect(stdout).include('Your project has set the configuration option: `chromeWebSecurity` to `false`.\n\nThis option will not have an effect in Firefox.')
       },
     })
   })

@@ -1,9 +1,16 @@
-import type { App, BrowserWindow, OpenDialogOptions, OpenDialogReturnValue, SaveDialogOptions, SaveDialogReturnValue } from 'electron'
+import type { App, BrowserWindow, OpenDialogOptions, OpenDialogReturnValue, SaveDialogOptions, SaveDialogReturnValue, Notification } from 'electron'
 import os from 'os'
 import type { DataContext } from '..'
 import _ from 'lodash'
 import path from 'path'
 import assert from 'assert'
+import debugLib from 'debug'
+
+const debug = debugLib('cypress:data-context:ElectronActions')
+
+// Declare notification variable globally so that it doesn't get garbage collected
+// before the user clicks on the notification
+const notifications = new Set<Notification>()
 
 export interface ElectronApiShape {
   openExternal(url: string): void
@@ -13,6 +20,7 @@ export interface ElectronApiShape {
   copyTextToClipboard(text: string): void
   isMainWindowFocused(): boolean
   focusMainWindow(): void
+  createNotification(title: string, body: string): Notification
 }
 
 export class ElectronActions {
@@ -103,5 +111,23 @@ export class ElectronActions {
     return this.ctx.electronApi.showSaveDialog(this.electron.browserWindow, props).then((obj) => {
       return obj.filePath || null
     })
+  }
+
+  showSystemNotification (title: string, body: string, onClick: () => void) {
+    const notification = this.ctx.electronApi.createNotification(title, body)
+
+    notifications.add(notification)
+
+    debug('notification created %o', notification)
+
+    function clickFn (event: Event) {
+      debug('notification clicked %o', event)
+      onClick()
+      notifications.delete(notification)
+    }
+
+    notification.on('click', clickFn)
+
+    notification.show()
   }
 }
