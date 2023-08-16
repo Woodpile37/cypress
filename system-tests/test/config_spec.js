@@ -11,6 +11,7 @@ describe('e2e config', () => {
       spec: 'config_passing.cy.js',
       snapshot: true,
       config: {
+        videoCompression: false,
         env: {
           scriptlet: '<script>alert(\'this should not break\')</script>',
         },
@@ -174,18 +175,6 @@ describe('e2e config', () => {
     return systemTests.exec(this, {
       project: 'invalid-root-level-config',
       configFile: 'invalid-component-baseUrl-config.js',
-      testingType: 'component',
-      expectedExitCode: 1,
-      snapshot: true,
-    })
-  })
-
-  it('throws an error if experimentalSessionAndOrigin is set on the component level', async function () {
-    await Fixtures.scaffoldProject('invalid-root-level-config')
-
-    return systemTests.exec(this, {
-      project: 'invalid-root-level-config',
-      configFile: 'invalid-component-experimentalSessionAndOrigin-config.js',
       testingType: 'component',
       expectedExitCode: 1,
       snapshot: true,

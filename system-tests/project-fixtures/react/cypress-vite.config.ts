@@ -1,7 +1,6 @@
 import { defineConfig } from 'cypress'
 import type * as vite from 'vite'
 
-
 declare global {
   namespace Cypress {
     interface DefineDevServerConfig {
@@ -11,6 +10,7 @@ declare global {
 }
 
 export default defineConfig({
+  videoCompression: false, // turn off video compression for CI
   component: {
     devServer: {
       framework: 'react',
@@ -19,5 +19,5 @@ export default defineConfig({
   },
   // These tests should run quickly / fail quickly,
   // since we intentionally causing error states for testing
-  defaultCommandTimeout: 1000
+  defaultCommandTimeout: 1000,
 })

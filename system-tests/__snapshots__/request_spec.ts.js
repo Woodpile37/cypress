@@ -54,8 +54,7 @@ exports['e2e requests / passes'] = `
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/request.cy.js.mp4                   (X second)
+  -  Video output: /XXX/XXX/XXX/cypress/videos/request.cy.js.mp4
 
 
 ====================================================================================================
@@ -131,7 +130,6 @@ https://on.cypress.io/request
   From Node.js Internals:
     RequestError: Error: connect ECONNREFUSED 127.0.0.1:16795
       [stack trace lines]
-    
 
 
 
@@ -159,9 +157,7 @@ https://on.cypress.io/request
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/request_http_network_error_fail     (X second)
-                          ing.cy.js.mp4                                                             
+  -  Video output: /XXX/XXX/XXX/cypress/videos/request_http_network_error_failing.cy.js.mp4
 
 
 ====================================================================================================
@@ -278,9 +274,7 @@ https://on.cypress.io/request
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/request_status_code_failing.cy.     (X second)
-                          js.mp4                                                                    
+  -  Video output: /XXX/XXX/XXX/cypress/videos/request_status_code_failing.cy.js.mp4
 
 
 ====================================================================================================
@@ -405,9 +399,7 @@ https://on.cypress.io/request
 
   (Video)
 
-  -  Started processing:  Compressing to 32 CRF                                                     
-  -  Finished processing: /XXX/XXX/XXX/cypress/videos/request_long_http_props_failing     (X second)
-                          .cy.js.mp4                                                                
+  -  Video output: /XXX/XXX/XXX/cypress/videos/request_long_http_props_failing.cy.js.mp4
 
 
 ====================================================================================================

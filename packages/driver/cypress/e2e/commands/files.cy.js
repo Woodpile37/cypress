@@ -14,14 +14,20 @@ describe('src/cy/commands/files', () => {
   })
 
   describe('#readFile', () => {
-    it('triggers \'read:file\' with the right options', () => {
+    it('sends privileged readFile to backend with the right options', () => {
       Cypress.backend.resolves(okResponse)
 
       cy.readFile('foo.json').then(() => {
         expect(Cypress.backend).to.be.calledWith(
-          'read:file',
-          'foo.json',
-          { encoding: 'utf8' },
+          'run:privileged',
+          {
+            commandName: 'readFile',
+            userArgs: ['6998637248317671'],
+            options: {
+              file: 'foo.json',
+              encoding: 'utf8',
+            },
+          },
         )
       })
     })
@@ -31,9 +37,15 @@ describe('src/cy/commands/files', () => {
 
       cy.readFile('foo.json', 'ascii').then(() => {
         expect(Cypress.backend).to.be.calledWith(
-          'read:file',
-          'foo.json',
-          { encoding: 'ascii' },
+          'run:privileged',
+          {
+            commandName: 'readFile',
+            userArgs: ['6998637248317671', '2573904513237804'],
+            options: {
+              file: 'foo.json',
+              encoding: 'ascii',
+            },
+          },
         )
       })
     })
@@ -47,9 +59,15 @@ describe('src/cy/commands/files', () => {
 
       cy.readFile('foo.json', null).then(() => {
         expect(Cypress.backend).to.be.calledWith(
-          'read:file',
-          'foo.json',
-          { encoding: null },
+          'run:privileged',
+          {
+            commandName: 'readFile',
+            userArgs: ['6998637248317671', '6158203196586298'],
+            options: {
+              file: 'foo.json',
+              encoding: null,
+            },
+          },
         )
       }).should('eql', Buffer.from('\n'))
     })
@@ -161,15 +179,23 @@ describe('src/cy/commands/files', () => {
       defaultCommandTimeout: 50,
     }, () => {
       beforeEach(function () {
+        const collectLogs = (attrs, log) => {
+          if (attrs.name === 'readFile') {
+            this.fileLog = log
+          }
+
+          this.logs?.push(log)
+        }
+
         cy.visit('/fixtures/empty.html')
+        .then(() => {
+          cy.on('log:added', collectLogs)
+        })
 
         this.logs = []
 
-        cy.on('log:added', (attrs, log) => {
-          if (attrs.name === 'readFile') {
-            this.lastLog = log
-            this.logs.push(log)
-          }
+        cy.on('fail', () => {
+          cy.off('log:added', collectLogs)
         })
 
         return null
@@ -177,11 +203,11 @@ describe('src/cy/commands/files', () => {
 
       it('throws when file argument is absent', function (done) {
         cy.on('fail', (err) => {
-          const { lastLog } = this
+          const { fileLog } = this
 
           assertLogLength(this.logs, 1)
-          expect(lastLog.get('error')).to.eq(err)
-          expect(lastLog.get('state')).to.eq('failed')
+          expect(fileLog.get('error')).to.eq(err)
+          expect(fileLog.get('state')).to.eq('failed')
           expect(err.message).to.eq('`cy.readFile()` must be passed a non-empty string as its 1st argument. You passed: `undefined`.')
           expect(err.docsUrl).to.eq('https://on.cypress.io/readfile')
 
@@ -193,11 +219,11 @@ describe('src/cy/commands/files', () => {
 
       it('throws when file argument is not a string', function (done) {
         cy.on('fail', (err) => {
-          const { lastLog } = this
+          const { fileLog } = this
 
           assertLogLength(this.logs, 1)
-          expect(lastLog.get('error')).to.eq(err)
-          expect(lastLog.get('state')).to.eq('failed')
+          expect(fileLog.get('error')).to.eq(err)
+          expect(fileLog.get('state')).to.eq('failed')
           expect(err.message).to.eq('`cy.readFile()` must be passed a non-empty string as its 1st argument. You passed: `2`.')
           expect(err.docsUrl).to.eq('https://on.cypress.io/readfile')
 
@@ -209,11 +235,11 @@ describe('src/cy/commands/files', () => {
 
       it('throws when file argument is an empty string', function (done) {
         cy.on('fail', (err) => {
-          const { lastLog } = this
+          const { fileLog } = this
 
           assertLogLength(this.logs, 1)
-          expect(lastLog.get('error')).to.eq(err)
-          expect(lastLog.get('state')).to.eq('failed')
+          expect(fileLog.get('error')).to.eq(err)
+          expect(fileLog.get('state')).to.eq('failed')
           expect(err.message).to.eq('`cy.readFile()` must be passed a non-empty string as its 1st argument. You passed: ``.')
           expect(err.docsUrl).to.eq('https://on.cypress.io/readfile')
 
@@ -233,11 +259,11 @@ describe('src/cy/commands/files', () => {
         Cypress.backend.rejects(err)
 
         cy.on('fail', (err) => {
-          const { lastLog } = this
+          const { fileLog } = this
 
-          assertLogLength(this.logs, 1)
-          expect(lastLog.get('error')).to.eq(err)
-          expect(lastLog.get('state')).to.eq('failed')
+          assertLogLength(this.logs, 2)
+          expect(fileLog.get('error')).to.eq(err)
+          expect(fileLog.get('state')).to.eq('failed')
           expect(err.message).to.eq(stripIndent`\
             \`cy.readFile(\"foo\")\` failed while trying to read the file at the following path:
 
@@ -265,11 +291,10 @@ describe('src/cy/commands/files', () => {
         Cypress.backend.rejects(err)
 
         cy.on('fail', (err) => {
-          const { lastLog } = this
+          const { fileLog } = this
 
-          assertLogLength(this.logs, 1)
-          expect(lastLog.get('error')).to.eq(err)
-          expect(lastLog.get('state')).to.eq('failed')
+          expect(fileLog.get('error')).to.eq(err)
+          expect(fileLog.get('state')).to.eq('failed')
 
           expect(err.message).to.eq(stripIndent`
             Timed out retrying after 50ms: \`cy.readFile(\"foo.json\")\` failed because the file does not exist at the following path:
@@ -300,11 +325,10 @@ describe('src/cy/commands/files', () => {
         })
 
         cy.on('fail', (err) => {
-          const { lastLog } = this
+          const { fileLog } = this
 
-          assertLogLength(this.logs, 1)
-          expect(lastLog.get('error')).to.eq(err)
-          expect(lastLog.get('state')).to.eq('failed')
+          expect(fileLog.get('error')).to.eq(err)
+          expect(fileLog.get('state')).to.eq('failed')
 
           expect(err.message).to.eq(stripIndent`
             Timed out retrying after 50ms: \`cy.readFile(\"foo.json\")\` failed because the file does not exist at the following path:
@@ -325,11 +349,16 @@ describe('src/cy/commands/files', () => {
         Cypress.backend.resolves(okResponse)
 
         cy.on('fail', (err) => {
-          const { lastLog } = this
+          const { fileLog, logs } = this
 
-          assertLogLength(this.logs, 1)
-          expect(lastLog.get('error')).to.eq(err)
-          expect(lastLog.get('state')).to.eq('failed')
+          const assertLog = logs.find((log) => log.get('name') === 'assert')
+
+          expect(fileLog.get('state')).to.eq('passed')
+          expect(fileLog.get('error')).to.be.undefined
+
+          expect(assertLog.get('name')).to.eq('assert')
+          expect(assertLog.get('error')).to.eq(err)
+          expect(assertLog.get('state')).to.eq('failed')
           expect(err.message).to.eq(stripIndent`\
             Timed out retrying after 50ms: \`cy.readFile(\"foo.json\")\` failed because the file exists when expected not to exist at the following path:
 
@@ -349,11 +378,15 @@ describe('src/cy/commands/files', () => {
         })
 
         cy.on('fail', (err) => {
-          const { lastLog } = this
+          const { fileLog, logs } = this
 
-          assertLogLength(this.logs, 1)
-          expect(lastLog.get('error')).to.eq(err)
-          expect(lastLog.get('state')).to.eq('failed')
+          expect(fileLog.get('state')).to.eq('passed')
+          expect(fileLog.get('error')).to.be.undefined
+
+          const assertLog = logs.find((log) => log.get('name') === 'assert')
+
+          expect(assertLog.get('error')).to.eq(err)
+          expect(assertLog.get('state')).to.eq('failed')
           expect(err.message).to.eq('Timed out retrying after 50ms: expected \'foo\' to equal \'contents\'')
 
           done()
@@ -368,11 +401,10 @@ describe('src/cy/commands/files', () => {
         })
 
         cy.on('fail', (err) => {
-          const { lastLog } = this
+          const { fileLog } = this
 
-          assertLogLength(this.logs, 1)
-          expect(lastLog.get('error')).to.eq(err)
-          expect(lastLog.get('state')).to.eq('failed')
+          expect(fileLog.get('error')).to.eq(err)
+          expect(fileLog.get('state')).to.eq('failed')
           expect(err.message).to.eq(stripIndent`\
             \`cy.readFile("foo")\` timed out after waiting \`10ms\`.
           `)
@@ -393,11 +425,10 @@ describe('src/cy/commands/files', () => {
         })
 
         cy.on('fail', (err) => {
-          const { lastLog } = this
+          const { fileLog } = this
 
-          assertLogLength(this.logs, 1)
-          expect(lastLog.get('error')).to.eq(err)
-          expect(lastLog.get('state')).to.eq('failed')
+          expect(fileLog.get('error')).to.eq(err)
+          expect(fileLog.get('state')).to.eq('failed')
           expect(err.message).to.eq(stripIndent`\
             \`cy.readFile("foo")\` timed out after waiting \`42ms\`.
           `)
@@ -413,17 +444,21 @@ describe('src/cy/commands/files', () => {
   })
 
   describe('#writeFile', () => {
-    it('triggers \'write:file\' with the right options', () => {
+    it('sends privileged writeFile to backend with the right options', () => {
       Cypress.backend.resolves(okResponse)
 
       cy.writeFile('foo.txt', 'contents').then(() => {
         expect(Cypress.backend).to.be.calledWith(
-          'write:file',
-          'foo.txt',
-          'contents',
+          'run:privileged',
           {
-            encoding: 'utf8',
-            flag: 'w',
+            commandName: 'writeFile',
+            userArgs: ['2916834115813688', '4891975990226114'],
+            options: {
+              fileName: 'foo.txt',
+              contents: 'contents',
+              encoding: 'utf8',
+              flag: 'w',
+            },
           },
         )
       })
@@ -434,12 +469,16 @@ describe('src/cy/commands/files', () => {
 
       cy.writeFile('foo.txt', 'contents', 'ascii').then(() => {
         expect(Cypress.backend).to.be.calledWith(
-          'write:file',
-          'foo.txt',
-          'contents',
+          'run:privileged',
           {
-            encoding: 'ascii',
-            flag: 'w',
+            commandName: 'writeFile',
+            userArgs: ['2916834115813688', '4891975990226114', '2573904513237804'],
+            options: {
+              fileName: 'foo.txt',
+              contents: 'contents',
+              encoding: 'ascii',
+              flag: 'w',
+            },
           },
         )
       })
@@ -449,14 +488,20 @@ describe('src/cy/commands/files', () => {
     it('explicit null encoding is sent to server as Buffer', () => {
       Cypress.backend.resolves(okResponse)
 
-      cy.writeFile('foo.txt', Buffer.from([0, 0, 54, 255]), null).then(() => {
+      const buffer = Buffer.from([0, 0, 54, 255])
+
+      cy.writeFile('foo.txt', buffer, null).then(() => {
         expect(Cypress.backend).to.be.calledWith(
-          'write:file',
-          'foo.txt',
-          Buffer.from([0, 0, 54, 255]),
+          'run:privileged',
           {
-            encoding: null,
-            flag: 'w',
+            commandName: 'writeFile',
+            userArgs: ['2916834115813688', '6309890104324788', '6158203196586298'],
+            options: {
+              fileName: 'foo.txt',
+              contents: buffer,
+              encoding: null,
+              flag: 'w',
+            },
           },
         )
       })
@@ -467,12 +512,16 @@ describe('src/cy/commands/files', () => {
 
       cy.writeFile('foo.txt', 'contents', { encoding: 'ascii' }).then(() => {
         expect(Cypress.backend).to.be.calledWith(
-          'write:file',
-          'foo.txt',
-          'contents',
+          'run:privileged',
           {
-            encoding: 'ascii',
-            flag: 'w',
+            commandName: 'writeFile',
+            userArgs: ['2916834115813688', '4891975990226114', '4694939291947123'],
+            options: {
+              fileName: 'foo.txt',
+              contents: 'contents',
+              encoding: 'ascii',
+              flag: 'w',
+            },
           },
         )
       })
@@ -518,12 +567,16 @@ describe('src/cy/commands/files', () => {
 
         cy.writeFile('foo.txt', 'contents', { flag: 'a+' }).then(() => {
           expect(Cypress.backend).to.be.calledWith(
-            'write:file',
-            'foo.txt',
-            'contents',
+            'run:privileged',
             {
-              encoding: 'utf8',
-              flag: 'a+',
+              commandName: 'writeFile',
+              userArgs: ['2916834115813688', '4891975990226114', '2343101193011749'],
+              options: {
+                fileName: 'foo.txt',
+                contents: 'contents',
+                encoding: 'utf8',
+                flag: 'a+',
+              },
             },
           )
         })

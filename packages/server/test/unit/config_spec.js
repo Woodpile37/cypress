@@ -5,26 +5,33 @@ const stripAnsi = require('strip-ansi')
 const { stripIndent } = require('common-tags')
 const Fixtures = require('@tooling/system-tests')
 const { getCtx } = require('@packages/data-context')
+const { sinon } = require('../spec_helper')
 
 describe('lib/config', () => {
   before(function () {
     this.env = process.env
+    this.versions = process.versions
 
     process.env = _.omit(process.env, 'CYPRESS_DEBUG')
+    process.versions.chrome = '0'
 
     Fixtures.scaffold()
   })
 
   after(function () {
     process.env = this.env
+    process.versions = this.versions
   })
 
   context('.get', () => {
     beforeEach(async function () {
+      delete process.env.CYPRESS_COMMERCIAL_RECOMMENDATIONS
+
       this.ctx = getCtx()
 
       this.projectRoot = '/_test-output/path/to/project'
 
+      sinon.stub(process, 'chdir').returns()
       sinon.stub(this.ctx.lifecycleManager, 'verifyProjectRoot').returns(undefined)
 
       await this.ctx.lifecycleManager.setCurrentProject(this.projectRoot)
@@ -565,6 +572,64 @@ describe('lib/config', () => {
         })
       })
 
+      context('experimentalCspAllowList', () => {
+        const experimentalCspAllowedDirectives = JSON.stringify(['script-src-elem', 'script-src', 'default-src', 'form-action', 'child-src', 'frame-src']).split(',').join(', ')
+
+        it('passes if false', function () {
+          this.setup({ experimentalCspAllowList: false })
+
+          return this.expectValidationPasses()
+        })
+
+        it('passes if true', function () {
+          this.setup({ experimentalCspAllowList: true })
+
+          return this.expectValidationPasses()
+        })
+
+        it('fails if string', function () {
+          this.setup({ experimentalCspAllowList: 'fake-directive' })
+
+          return this.expectValidationFails(`be an array including any of these values: ${experimentalCspAllowedDirectives}`)
+        })
+
+        it('passes if an empty array', function () {
+          this.setup({ experimentalCspAllowList: [] })
+
+          return this.expectValidationPasses()
+        })
+
+        it('passes if subset of Cypress.experimentalCspAllowedDirectives[]', function () {
+          this.setup({ experimentalCspAllowList: ['default-src', 'form-action'] })
+
+          return this.expectValidationPasses()
+        })
+
+        it('passes if null', function () {
+          this.setup({ experimentalCspAllowList: null })
+
+          return this.expectValidationPasses()
+        })
+
+        it('fails if string[]', function () {
+          this.setup({ experimentalCspAllowList: ['script-src', 'fake-directive-2'] })
+
+          return this.expectValidationFails(`be an array including any of these values: ${experimentalCspAllowedDirectives}`)
+        })
+
+        it('fails if any[]', function () {
+          this.setup({ experimentalCspAllowList: [true, 'default-src'] })
+
+          return this.expectValidationFails(`be an array including any of these values: ${experimentalCspAllowedDirectives}`)
+        })
+
+        it('fails if not falsy, or subset of Cypress.experimentalCspAllowedDirectives[]', function () {
+          this.setup({ experimentalCspAllowList: 1 })
+
+          return this.expectValidationFails(`be an array including any of these values: ${experimentalCspAllowedDirectives}`)
+        })
+      })
+
       context('supportFile', () => {
         it('passes if false', function () {
           this.setup({ e2e: { supportFile: false } })
@@ -615,10 +680,22 @@ describe('lib/config', () => {
           return this.expectValidationPasses()
         })
 
+        it('passes if true', function () {
+          this.setup({ videoCompression: true })
+
+          return this.expectValidationPasses()
+        })
+
+        it('fails if not a valid CRF value', function () {
+          this.setup({ videoCompression: 70 })
+
+          return this.expectValidationFails('to be a valid CRF number between 1 & 51, 0 or false to disable compression, or true to use the default compression of 32')
+        })
+
         it('fails if not a number', function () {
           this.setup({ videoCompression: 'foo' })
 
-          return this.expectValidationFails('be a number or false')
+          return this.expectValidationFails('to be a valid CRF number between 1 & 51, 0 or false to disable compression, or true to use the default compression of 32')
         })
       })
 

@@ -1,8 +1,7 @@
 const { assertLogLength } = require('../../../support/utils')
 const { _, $ } = Cypress
 
-// TODO(webkit): fix+unskip for experimental webkit release
-describe('src/cy/commands/actions/type - #type errors', { browser: '!webkit' }, () => {
+describe('src/cy/commands/actions/type - #type errors', () => {
   beforeEach(() => {
     cy.visit('/fixtures/dom.html')
   })
@@ -41,7 +40,7 @@ describe('src/cy/commands/actions/type - #type errors', { browser: '!webkit' }, 
 
       cy.on('fail', (err) => {
         expect(typed).to.be.calledOnce
-        expect(err.message).to.include('`cy.type()` failed because this element')
+        expect(err.message).to.include('`cy.type()` failed because the page')
 
         done()
       })
@@ -250,6 +249,8 @@ If you want to skip parsing special character sequences and type the text exactl
     it('can type into input with invalid type attribute', () => {
       cy.get(':text:first')
       .invoke('attr', 'type', 'asdf')
+
+      cy.get(':text:first')
       .type('foobar')
       .should('have.value', 'foobar')
     })
