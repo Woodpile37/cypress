@@ -18,13 +18,13 @@
     "@angular-devkit/core": "^14.2.1",
     "@angular-devkit/schematics": "^14.2.1",
     "@angular-devkit/schematics-cli": "^14.2.1",
-    "@angular/cli": "^14.2.1",
+    "@angular/cli": "^14.2.12",
     "@schematics/angular": "^14.2.1",
     "@types/chai-enzyme": "0.6.7",
     "@types/mocha": "8.0.3",
     "@types/node": "^18.0.6",
     "chai": "4.2.0",
-    "mocha": "3.5.3",
+    "mocha": "10.1.0",
     "typescript": "^4.7.4"
   },
   "peerDependencies": {
